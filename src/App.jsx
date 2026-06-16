@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, NavLink } from 'react-router-dom';
-import { Map, Backpack, Wrench, Activity, Sun, Moon, ShieldAlert, Users, LogOut, Trophy } from 'lucide-react';
+import { Map, Backpack, Wrench, Activity, Sun, Moon, ShieldAlert, Users, LogOut, Trophy, Music } from 'lucide-react';
 import localforage from 'localforage';
 import TrackerPage from './pages/TrackerPage';
 import ChecklistPage from './pages/ChecklistPage';
@@ -10,6 +10,7 @@ import SafetyPage from './pages/SafetyPage';
 import FeedPage from './pages/FeedPage';
 import LoginPage from './pages/LoginPage';
 import LeaderboardPage from './pages/LeaderboardPage';
+import MusicPage from './pages/MusicPage';
 
 function App() {
   const [isLightMode, setIsLightMode] = useState(false);
@@ -69,8 +70,9 @@ function App() {
             <Route path="/tracker" element={<TrackerPage />} />
             <Route path="/checklist" element={<ChecklistPage />} />
             <Route path="/tools" element={<ToolsPage />} />
-            <Route path="/strava" element={<StravaPage />} />
             <Route path="/safety" element={<SafetyPage />} />
+            <Route path="/music" element={<MusicPage />} />
+            <Route path="/strava" element={<StravaPage />} />
           </Routes>
         </main>
 
@@ -89,6 +91,9 @@ function App() {
           </NavLink>
           <NavLink to="/tools" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} style={{ flex: 1 }}>
             <Wrench size={20} /> <span style={{ fontSize: '0.6rem' }}>ALAT</span>
+          </NavLink>
+          <NavLink to="/music" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} style={{ flex: 1 }}>
+            <Music size={20} /> <span style={{ fontSize: '0.6rem' }}>MUSIK</span>
           </NavLink>
           <NavLink to="/safety" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} style={{ flex: 1 }}>
             <ShieldAlert size={20} /> <span style={{ fontSize: '0.6rem' }}>SOS</span>
