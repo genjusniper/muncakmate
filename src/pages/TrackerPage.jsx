@@ -39,6 +39,8 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 const TrackerPage = () => {
   const [mode, setMode] = useState('hike'); 
   const [isTracking, setIsTracking] = useState(false);
+  const [autoPauseEnabled, setAutoPauseEnabled] = useState(false);
+  const [isAutoPaused, setIsAutoPaused] = useState(false);
   
   const [duration, setDuration] = useState(0);
   const [distance, setDistance] = useState(0.00);
@@ -145,6 +147,17 @@ const TrackerPage = () => {
 
     if (isTracking) {
       durationIntervalRef.current = setInterval(() => {
+        if (autoPauseEnabled) {
+          const idleSeconds = (Date.now() - lastMoveTimeRef.current) / 1000;
+          if (idleSeconds > 5) {
+            setIsAutoPaused(true);
+            return; // Jangan tambah durasi
+          } else {
+            setIsAutoPaused(false);
+          }
+        } else {
+          setIsAutoPaused(false);
+        }
         setDuration(prev => prev + 1);
       }, 1000);
 
@@ -363,22 +376,31 @@ const TrackerPage = () => {
         )}
 
         <h2 style={{ marginBottom: '1rem', color: 'var(--primary-color)', textAlign: 'center', fontSize: '1.2rem' }}>
-          {isTracking ? 'GPS: MEREKAM...' : 'GPS: MENUNGGU'}
+          {isTracking ? (isAutoPaused ? 'GPS: AUTO-PAUSED' : 'GPS: MEREKAM...') : 'GPS: MENUNGGU'}
         </h2>
         
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
-          <button 
-            onClick={() => setVoiceEnabled(!voiceEnabled)}
-            style={{ 
-              background: voiceEnabled ? 'rgba(16, 185, 129, 0.1)' : 'transparent', 
-              border: `1px solid ${voiceEnabled ? 'var(--success-color)' : 'var(--text-secondary)'}`, 
-              color: voiceEnabled ? 'var(--success-color)' : 'var(--text-secondary)',
-              padding: '0.5rem 1rem', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 'bold',
-              display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', transition: 'all 0.2s'
-            }}
-          >
-            {voiceEnabled ? '🔊 ASISTEN SUARA: ON' : '🔈 ASISTEN SUARA: OFF'}
-          </button>
+        {/* Top Speed & Average Pace */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
+          <div style={{ background: 'rgba(239,68,68,0.1)', padding: '0.75rem', borderRadius: '12px', border: '1px solid rgba(239,68,68,0.2)' }}>
+            <div style={{ fontSize: '0.75rem', color: '#ef4444', fontWeight: 'bold' }}>MAX SPEED</div>
+            <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>{topSpeed} <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>km/h</span></div>
+          </div>
+          <div style={{ background: 'rgba(59,130,246,0.1)', padding: '0.75rem', borderRadius: '12px', border: '1px solid rgba(59,130,246,0.2)' }}>
+            <div style={{ fontSize: '0.75rem', color: '#3b82f6', fontWeight: 'bold' }}>RATA-RATA PACE</div>
+            <div style={{ fontSize: '1.4rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>{calculatePace(distance, duration)} <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>/km</span></div>
+          </div>
+        </div>
+
+        {/* Toggles (Voice & Auto-Pause) */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1.25rem' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.05)', padding: '0.75rem', borderRadius: '12px', fontSize: '0.8rem', cursor: 'pointer' }}>
+            <input type="checkbox" checked={voiceEnabled} onChange={(e) => setVoiceEnabled(e.target.checked)} style={{ accentColor: 'var(--primary-color)' }} />
+            Asisten Suara
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255,255,255,0.05)', padding: '0.75rem', borderRadius: '12px', fontSize: '0.8rem', cursor: 'pointer' }}>
+            <input type="checkbox" checked={autoPauseEnabled} onChange={(e) => setAutoPauseEnabled(e.target.checked)} style={{ accentColor: 'var(--primary-color)' }} />
+            Auto-Pause {isAutoPaused && <span style={{ color: '#ef4444', fontWeight: 'bold', animation: 'pulse 1s infinite' }}>(PAUSED)</span>}
+          </label>
         </div>
         
         <div className="stat-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
@@ -405,13 +427,6 @@ const TrackerPage = () => {
           >
             <Heart size={20} /> SAMBUNGKAN SENSOR DETAK JANTUNG
           </button>
-        )}
-
-        {mode === 'drive' && (
-          <div className="stat-box" style={{ marginBottom: '1.5rem', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
-             <div className="stat-value" style={{ color: 'var(--warning-color)' }}>{topSpeed} km/h</div>
-             <div className="stat-label" style={{ color: 'var(--warning-color)' }}>KEC. MAKSIMAL</div>
-          </div>
         )}
 
         <button 
