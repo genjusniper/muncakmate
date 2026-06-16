@@ -266,6 +266,14 @@ const TrackerPage = () => {
     }
   };
 
+  const calculatePace = (dist, dur) => {
+    if (dist <= 0 || dur <= 0) return "--:--";
+    const paceSecondsPerKm = dur / dist;
+    const m = Math.floor(paceSecondsPerKm / 60);
+    const s = Math.floor(paceSecondsPerKm % 60);
+    return `${m}'${s.toString().padStart(2, '0')}"`;
+  };
+
   const formatTime = (secs) => {
     const hrs = Math.floor(secs / 3600);
     const mins = Math.floor((secs % 3600) / 60);
