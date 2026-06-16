@@ -58,8 +58,11 @@ const FeedPage = () => {
     setCommentPanel(activityId);
     if (!comments[activityId]) {
       try {
-        const res = await fetch(`${API_BASE}/api/comments/${activityId}`);
-        if (res.ok) setComments(prev => ({ ...prev, [activityId]: await res.json() }));
+        const res = await fetch(`${API_BASE}/api/comments?activityId=${activityId}`);
+        if (res.ok) {
+          const data = await res.json();
+          setComments(prev => ({ ...prev, [activityId]: data }));
+        }
       } catch (err) { console.error(err); }
     }
   };

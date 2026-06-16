@@ -74,6 +74,24 @@ const playlists = [
     color: '#dc2626',
     spotifyEmbed: 'https://open.spotify.com/embed/playlist/37i9dQZF1DX76Wlfdnj7AP?utm_source=generator&theme=0',
     youtubeUrl: 'https://www.youtube.com/results?search_query=workout+music+playlist+2024'
+  },
+  {
+    id: 'artist-aftershine',
+    name: 'Aftershine',
+    desc: 'Hits Aftershine terpopuler',
+    emoji: '🌟',
+    color: '#a78bfa',
+    spotifyEmbed: 'https://open.spotify.com/embed/artist/4Tm9HGBHQQkUlRFGLJLGMR?utm_source=generator&theme=0',
+    youtubeUrl: 'https://www.youtube.com/results?search_query=aftershine+official+musik'
+  },
+  {
+    id: 'artist-ndx',
+    name: 'NDX A.K.A',
+    desc: 'Raja Hip-Hop Koplo Indonesia',
+    emoji: '🎤',
+    color: '#facc15',
+    spotifyEmbed: 'https://open.spotify.com/embed/artist/0gPMUCuBIgM4PJc3jnpj9E?utm_source=generator&theme=0',
+    youtubeUrl: 'https://www.youtube.com/results?search_query=NDX+AKA+official+musik'
   }
 ];
 
