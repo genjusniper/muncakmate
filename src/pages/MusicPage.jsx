@@ -1,104 +1,125 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, SkipForward, SkipBack, Download, CheckCircle, Volume2, Music, Repeat, Shuffle } from 'lucide-react';
-
-const tracks = [
-  { id: 1, title: 'Acoustic Breeze', artist: 'Bensound', genre: '🎸 Santai', url: 'https://www.bensound.com/bensound-music/bensound-acousticbreeze.mp3', color: '#10b981' },
-  { id: 2, title: 'Epic Mountain', artist: 'SoundHelix', genre: '🏔️ Petualangan', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', color: '#f59e0b' },
-  { id: 3, title: 'Creative Minds', artist: 'Bensound', genre: '💡 Inspirasi', url: 'https://www.bensound.com/bensound-music/bensound-creativeminds.mp3', color: '#8b5cf6' },
-  { id: 4, title: 'Ukulele', artist: 'Bensound', genre: '🌴 Tropical', url: 'https://www.bensound.com/bensound-music/bensound-ukulele.mp3', color: '#f97316' },
-  { id: 5, title: 'Energy Sport', artist: 'SoundHelix', genre: '💪 Olahraga', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3', color: '#ef4444' },
-  { id: 6, title: 'Happy Rock', artist: 'Bensound', genre: '🎸 Rock', url: 'https://www.bensound.com/bensound-music/bensound-happyrock.mp3', color: '#ec4899' },
-  { id: 7, title: 'Forest Walk', artist: 'SoundHelix', genre: '🌲 Alam', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3', color: '#06b6d4' },
-  { id: 8, title: 'Sunny Days', artist: 'Bensound', genre: '☀️ Ceria', url: 'https://www.bensound.com/bensound-music/bensound-sunny.mp3', color: '#facc15' },
-];
+import { Play, Pause, SkipForward, SkipBack, Plus, Trash2, Music, Repeat, Shuffle, HardDrive } from 'lucide-react';
+import localforage from 'localforage';
 
 const MusicPage = () => {
+  const [tracks, setTracks] = useState([]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(0.8);
-  const [cachedTracks, setCachedTracks] = useState({});
-  const [downloadProgress, setDownloadProgress] = useState({});
-  const [isDownloadingAll, setIsDownloadingAll] = useState(false);
   const [shuffle, setShuffle] = useState(false);
   const [repeat, setRepeat] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
+  
   const audioRef = useRef(null);
-
-  const currentTrack = tracks[currentIdx];
+  const fileInputRef = useRef(null);
+  const currentUrlRef = useRef(null);
 
   useEffect(() => {
-    checkCachedTracks();
+    loadTracks();
+    return () => {
+      if (currentUrlRef.current) URL.revokeObjectURL(currentUrlRef.current);
+    };
   }, []);
 
-  const checkCachedTracks = async () => {
-    if (!('caches' in window)) return;
-    const cache = await caches.open('muncakmate-music-v1');
-    const cached = {};
-    for (const track of tracks) {
-      const match = await cache.match(track.url);
-      if (match) cached[track.id] = true;
-    }
-    setCachedTracks(cached);
-  };
-
-  const cacheTrack = async (track) => {
-    if (!('caches' in window)) return;
-    setDownloadProgress(prev => ({ ...prev, [track.id]: 0 }));
+  const loadTracks = async () => {
     try {
-      const response = await fetch(track.url);
-      const cache = await caches.open('muncakmate-music-v1');
-      await cache.put(track.url, response);
-      setCachedTracks(prev => ({ ...prev, [track.id]: true }));
-      setDownloadProgress(prev => ({ ...prev, [track.id]: 100 }));
+      const savedTracks = await localforage.getItem('localMusicTracks') || [];
+      setTracks(savedTracks);
     } catch (err) {
-      console.error('Gagal mengunduh:', err);
+      console.error('Gagal memuat lagu', err);
     }
   };
 
-  const downloadAll = async () => {
-    setIsDownloadingAll(true);
-    for (const track of tracks) {
-      if (!cachedTracks[track.id]) await cacheTrack(track);
-    }
-    setIsDownloadingAll(false);
-    alert('Semua lagu berhasil diunduh! Sekarang bisa diputar offline 🎵');
-  };
+  const handleFileUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+    setIsAdding(true);
 
-  const getAudioSrc = async (url) => {
-    if ('caches' in window) {
-      const cache = await caches.open('muncakmate-music-v1');
-      const match = await cache.match(url);
-      if (match) {
-        const blob = await match.blob();
-        return URL.createObjectURL(blob);
+    try {
+      const currentTracks = await localforage.getItem('localMusicTracks') || [];
+      const newTracks = [...currentTracks];
+
+      for (const file of files) {
+        // Hanya tambahkan jika ukurannya wajar (misal max 15MB)
+        if (file.size > 15 * 1024 * 1024) {
+          alert(`File ${file.name} terlalu besar (>15MB). Silakan pilih file yang lebih kecil.`);
+          continue;
+        }
+
+        const trackData = {
+          id: Date.now() + Math.random().toString(36).substr(2, 9),
+          title: file.name.replace(/\.[^/.]+$/, ""), // Hapus ekstensi
+          blob: file, // Menyimpan File object (File inherit dari Blob)
+          color: `hsl(${Math.floor(Math.random() * 360)}, 70%, 50%)`
+        };
+        newTracks.push(trackData);
       }
+
+      await localforage.setItem('localMusicTracks', newTracks);
+      setTracks(newTracks);
+    } catch (err) {
+      console.error('Gagal menyimpan lagu', err);
+      alert('Gagal menyimpan file lagu. Pastikan memori cukup.');
     }
-    return url;
+    
+    setIsAdding(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const playTrack = async (idx) => {
+  const removeTrack = async (e, trackId) => {
+    e.stopPropagation();
+    if (!confirm('Hapus lagu ini dari aplikasi?')) return;
+    
+    const newTracks = tracks.filter(t => t.id !== trackId);
+    await localforage.setItem('localMusicTracks', newTracks);
+    setTracks(newTracks);
+    
+    if (tracks[currentIdx]?.id === trackId) {
+      if (audioRef.current) audioRef.current.pause();
+      setIsPlaying(false);
+      setProgress(0);
+      setCurrentIdx(0);
+    } else if (tracks.findIndex(t => t.id === trackId) < currentIdx) {
+      setCurrentIdx(currentIdx - 1);
+    }
+  };
+
+  const playTrack = (idx) => {
+    if (idx < 0 || idx >= tracks.length) return;
     setCurrentIdx(idx);
-    const src = await getAudioSrc(tracks[idx].url);
+    
+    if (currentUrlRef.current) {
+      URL.revokeObjectURL(currentUrlRef.current);
+    }
+    
+    const track = tracks[idx];
+    const url = URL.createObjectURL(track.blob);
+    currentUrlRef.current = url;
+    
     if (audioRef.current) {
-      audioRef.current.src = src;
-      audioRef.current.play();
+      audioRef.current.src = url;
+      audioRef.current.play().catch(e => console.error("Play error:", e));
       setIsPlaying(true);
     }
   };
 
   const togglePlay = () => {
-    if (!audioRef.current) return;
+    if (tracks.length === 0 || !audioRef.current || !audioRef.current.src) return;
     if (isPlaying) { audioRef.current.pause(); setIsPlaying(false); }
-    else { audioRef.current.play(); setIsPlaying(true); }
+    else { audioRef.current.play().catch(e => console.error("Play error:", e)); setIsPlaying(true); }
   };
 
   const next = () => {
+    if (tracks.length === 0) return;
     const nextIdx = shuffle ? Math.floor(Math.random() * tracks.length) : (currentIdx + 1) % tracks.length;
     playTrack(nextIdx);
   };
 
   const prev = () => {
+    if (tracks.length === 0) return;
     const prevIdx = (currentIdx - 1 + tracks.length) % tracks.length;
     playTrack(prevIdx);
   };
@@ -110,16 +131,22 @@ const MusicPage = () => {
   };
 
   const handleLoadedData = () => {
-    if (audioRef.current) setDuration(audioRef.current.duration);
+    if (audioRef.current) {
+      setDuration(audioRef.current.duration);
+      if (isPlaying) audioRef.current.play().catch(e => console.error("Play error:", e));
+    }
   };
 
   const handleEnded = () => {
-    if (repeat) { audioRef.current.play(); }
+    if (repeat && audioRef.current) { 
+      audioRef.current.currentTime = 0;
+      audioRef.current.play(); 
+    }
     else next();
   };
 
   const handleSeek = (e) => {
-    if (!audioRef.current) return;
+    if (!audioRef.current || !audioRef.current.duration) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const pct = (e.clientX - rect.left) / rect.width;
     audioRef.current.currentTime = pct * audioRef.current.duration;
@@ -130,7 +157,7 @@ const MusicPage = () => {
     return `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
   };
 
-  const cachedCount = Object.keys(cachedTracks).length;
+  const currentTrack = tracks[currentIdx] || null;
 
   return (
     <div className="fade-in" style={{ paddingBottom: '1rem' }}>
@@ -138,95 +165,127 @@ const MusicPage = () => {
 
       {/* Header */}
       <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-        <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: `rgba(${currentIdx * 30 % 255},100,200,0.15)`, color: currentTrack.color, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.75rem', boxShadow: `0 0 30px ${currentTrack.color}40`, transition: 'all 0.5s', animation: isPlaying ? 'spin 4s linear infinite' : 'none' }}>
+        <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: `rgba(16,185,129,0.15)`, color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.75rem', boxShadow: `0 0 30px rgba(16,185,129,0.4)`, transition: 'all 0.5s', animation: isPlaying ? 'spin 4s linear infinite' : 'none' }}>
           <Music size={32} />
         </div>
-        <h2 style={{ margin: 0, fontSize: '1.3rem' }}>Pemutar Musik Offline</h2>
+        <h2 style={{ margin: 0, fontSize: '1.3rem' }}>Musik Pribadi Offline</h2>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: '0.25rem 0 0' }}>
-          {cachedCount}/{tracks.length} lagu tersimpan offline
+          {tracks.length} lagu tersimpan di memori HP
         </p>
       </div>
 
+      {/* Notice/Tips */}
+      {tracks.length === 0 && (
+        <div style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '12px', padding: '1rem', marginBottom: '1.5rem', textAlign: 'center', fontSize: '0.85rem' }}>
+          <HardDrive size={32} color="#f59e0b" style={{ marginBottom: '0.5rem' }} />
+          <h3 style={{ margin: '0 0 0.5rem', color: '#f59e0b' }}>Lagu Kamu, Bebas Offline!</h3>
+          <p style={{ margin: 0, color: 'var(--text-secondary)' }}>Klik tombol di bawah untuk menambahkan file MP3 (Denny Caknan, NDX, dll) dari HP kamu. Lagu akan disimpan secara lokal di aplikasi ini tanpa perlu internet lagi.</p>
+        </div>
+      )}
+
       {/* Now Playing Card */}
-      <div className="card" style={{ background: `linear-gradient(135deg, rgba(0,0,0,0.3), ${currentTrack.color}20)`, border: `1px solid ${currentTrack.color}40`, marginBottom: '1rem' }}>
-        <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>{currentTrack.genre.split(' ')[0]}</div>
-          <div style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>{currentTrack.title}</div>
-          <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{currentTrack.artist} • {currentTrack.genre}</div>
-          {cachedTracks[currentTrack.id] && (
-            <div style={{ marginTop: '0.4rem', fontSize: '0.7rem', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}>
-              <CheckCircle size={12} /> Tersedia Offline
+      {currentTrack && (
+        <div className="card fade-in" style={{ background: `linear-gradient(135deg, rgba(0,0,0,0.3), ${currentTrack.color}20)`, border: `1px solid ${currentTrack.color}40`, marginBottom: '1rem' }}>
+          <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
+            <div style={{ width: '80px', height: '80px', borderRadius: '12px', background: `${currentTrack.color}40`, color: currentTrack.color, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', boxShadow: `0 8px 20px rgba(0,0,0,0.2)` }}>
+              <Music size={40} />
             </div>
-          )}
-        </div>
+            <div style={{ fontWeight: 'bold', fontSize: '1.1rem', wordBreak: 'break-word', padding: '0 1rem' }}>{currentTrack.title}</div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.25rem' }}>Local MP3 File</div>
+          </div>
 
-        {/* Progress Bar */}
-        <div onClick={handleSeek} style={{ height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', cursor: 'pointer', marginBottom: '0.5rem', position: 'relative' }}>
-          <div style={{ height: '100%', width: `${progress}%`, background: currentTrack.color, borderRadius: '2px', transition: 'width 0.5s linear' }} />
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>
-          <span>{formatTime(audioRef.current?.currentTime)}</span>
-          <span>{formatTime(duration)}</span>
-        </div>
+          {/* Progress Bar */}
+          <div onClick={handleSeek} style={{ height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', cursor: 'pointer', marginBottom: '0.5rem', position: 'relative' }}>
+            <div style={{ height: '100%', width: `${progress}%`, background: currentTrack.color, borderRadius: '3px', transition: 'width 0.1s linear' }} />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>
+            <span>{formatTime(audioRef.current?.currentTime)}</span>
+            <span>{formatTime(duration)}</span>
+          </div>
 
-        {/* Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1.25rem' }}>
-          <button onClick={() => setShuffle(!shuffle)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: shuffle ? currentTrack.color : 'var(--text-secondary)', transition: 'color 0.2s' }}>
-            <Shuffle size={20} />
-          </button>
-          <button onClick={prev} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-primary)' }}>
-            <SkipBack size={28} />
-          </button>
-          <button onClick={togglePlay} style={{ width: '60px', height: '60px', borderRadius: '50%', background: currentTrack.color, border: 'none', cursor: 'pointer', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 4px 20px ${currentTrack.color}60`, transition: 'all 0.2s' }}>
-            {isPlaying ? <Pause size={28} /> : <Play size={28} />}
-          </button>
-          <button onClick={next} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-primary)' }}>
-            <SkipForward size={28} />
-          </button>
-          <button onClick={() => setRepeat(!repeat)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: repeat ? currentTrack.color : 'var(--text-secondary)', transition: 'color 0.2s' }}>
-            <Repeat size={20} />
-          </button>
+          {/* Controls */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1.25rem' }}>
+            <button onClick={() => setShuffle(!shuffle)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: shuffle ? currentTrack.color : 'var(--text-secondary)', transition: 'color 0.2s' }}>
+              <Shuffle size={20} />
+            </button>
+            <button onClick={prev} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-primary)' }}>
+              <SkipBack size={28} />
+            </button>
+            <button onClick={togglePlay} style={{ width: '64px', height: '64px', borderRadius: '50%', background: currentTrack.color, border: 'none', cursor: 'pointer', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 4px 20px ${currentTrack.color}60`, transition: 'all 0.2s' }}>
+              {isPlaying ? <Pause size={32} /> : <Play size={32} />}
+            </button>
+            <button onClick={next} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-primary)' }}>
+              <SkipForward size={28} />
+            </button>
+            <button onClick={() => setRepeat(!repeat)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: repeat ? currentTrack.color : 'var(--text-secondary)', transition: 'color 0.2s' }}>
+              <Repeat size={20} />
+            </button>
+          </div>
         </div>
+      )}
 
-        {/* Volume */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '1.25rem' }}>
-          <Volume2 size={16} color="var(--text-secondary)" />
-          <input type="range" min="0" max="1" step="0.01" value={volume} onChange={e => { setVolume(Number(e.target.value)); if(audioRef.current) audioRef.current.volume = Number(e.target.value); }} style={{ flex: 1, accentColor: currentTrack.color }} />
-        </div>
-      </div>
-
-      {/* Download All Button */}
-      <button onClick={downloadAll} disabled={isDownloadingAll || cachedCount === tracks.length} className="btn" style={{ width: '100%', marginBottom: '1rem', background: cachedCount === tracks.length ? 'rgba(16,185,129,0.1)' : 'var(--primary-color)', border: cachedCount === tracks.length ? '1px solid #10b981' : 'none', color: cachedCount === tracks.length ? '#10b981' : 'white' }}>
-        {cachedCount === tracks.length ? <><CheckCircle size={18} /> SEMUA LAGU TERSIMPAN OFFLINE</> : isDownloadingAll ? `MENGUNDUH... (${cachedCount}/${tracks.length})` : <><Download size={18} /> UNDUH SEMUA UNTUK OFFLINE ({tracks.length} Lagu)</>}
+      {/* Add Track Button */}
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={handleFileUpload} 
+        accept="audio/*" 
+        multiple 
+        style={{ display: 'none' }} 
+      />
+      <button 
+        onClick={() => fileInputRef.current?.click()} 
+        disabled={isAdding} 
+        className="btn" 
+        style={{ width: '100%', marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+      >
+        <Plus size={20} /> {isAdding ? 'Menyimpan Lagu...' : 'TAMBAHKAN LAGU DARI HP'}
       </button>
 
       {/* Track List */}
-      <div className="card">
-        <h3 style={{ marginBottom: '1rem', fontSize: '1rem' }}>Daftar Lagu</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          {tracks.map((track, idx) => (
-            <div key={track.id} onClick={() => playTrack(idx)} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', borderRadius: '10px', cursor: 'pointer', background: currentIdx === idx ? `${track.color}15` : 'transparent', border: currentIdx === idx ? `1px solid ${track.color}40` : '1px solid transparent', transition: 'all 0.2s' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: `${track.color}20`, color: track.color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', flexShrink: 0 }}>
-                {currentIdx === idx && isPlaying ? '▶' : track.genre.split(' ')[0]}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: currentIdx === idx ? 'bold' : 'normal', fontSize: '0.9rem', color: currentIdx === idx ? track.color : 'var(--text-primary)' }}>{track.title}</div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>{track.artist} • {track.genre}</div>
-              </div>
-              {cachedTracks[track.id] ? (
-                <CheckCircle size={16} color="#10b981" />
-              ) : (
-                <button onClick={(e) => { e.stopPropagation(); cacheTrack(track); }} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>
-                  <Download size={16} />
+      {tracks.length > 0 && (
+        <div className="card">
+          <h3 style={{ marginBottom: '1rem', fontSize: '1rem' }}>Daftar Playlist Saya</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {tracks.map((track, idx) => (
+              <div 
+                key={track.id} 
+                onClick={() => playTrack(idx)} 
+                style={{ 
+                  display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', 
+                  borderRadius: '10px', cursor: 'pointer', 
+                  background: currentIdx === idx ? `${track.color}15` : 'transparent', 
+                  border: currentIdx === idx ? `1px solid ${track.color}40` : '1px solid rgba(255,255,255,0.05)', 
+                  transition: 'all 0.2s' 
+                }}
+              >
+                <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: `${track.color}20`, color: track.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  {currentIdx === idx && isPlaying ? <div className="equalizer"><span/><span/><span/></div> : <Music size={16} />}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: currentIdx === idx ? 'bold' : 'normal', fontSize: '0.85rem', color: currentIdx === idx ? track.color : 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {track.title}
+                  </div>
+                </div>
+                <button 
+                  onClick={(e) => removeTrack(e, track.id)} 
+                  style={{ background: 'transparent', border: 'none', color: 'var(--danger-color)', cursor: 'pointer', padding: '0.5rem', opacity: 0.7 }}
+                >
+                  <Trash2 size={18} />
                 </button>
-              )}
-            </div>
-          ))}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       <style>{`
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .equalizer { display: flex; gap: 2px; height: 12px; align-items: flex-end; }
+        .equalizer span { width: 3px; background: currentColor; animation: eq 1s ease-in-out infinite alternate; }
+        .equalizer span:nth-child(2) { animation-delay: 0.2s; }
+        .equalizer span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes eq { 0% { height: 20%; } 100% { height: 100%; } }
       `}</style>
     </div>
   );
