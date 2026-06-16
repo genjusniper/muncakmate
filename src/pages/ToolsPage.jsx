@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Music, Zap, TriangleAlert, Download, Compass, Star, Moon, CloudRain, Wind, Thermometer, Radio, PhoneCall, Mic } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Music, Zap, TriangleAlert, Download, Compass, Star, Moon, CloudRain, Wind, Thermometer, Radio, PhoneCall, Mic, Calculator, Timer } from 'lucide-react';
 import Peer from 'peerjs';
 
 function calculateBearing(lat1, lon1, lat2, lon2) {
@@ -412,27 +413,27 @@ const ToolsPage = () => {
         </div>
       </div>
 
-      <div className="card music-player">
-        <h3 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontSize: '1.1rem' }}>
-          <Music size={20} /> Pemutar Musik Offline
-        </h3>
-        <audio ref={audioRef} src="/audio/song1.mp3" loop onEnded={() => setIsPlaying(false)} />
-        <div className="track-list" style={{ marginTop: '1rem' }}>
-          <div className={`track-item ${isPlaying ? 'playing' : ''}`} style={{ borderLeft: isPlaying ? '4px solid var(--primary-color)' : '4px solid transparent' }}>
+      <div className="card">
+        <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>Lainnya</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.75rem' }}>
+          <Link to="/calc" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: 'rgba(252,76,2,0.1)', borderRadius: '12px', textDecoration: 'none', color: 'var(--text-primary)', border: '1px solid rgba(252,76,2,0.2)' }}>
+            <div style={{ background: 'var(--primary-color)', color: 'white', padding: '0.5rem', borderRadius: '8px' }}>
+              <Calculator size={24} />
+            </div>
             <div>
-              <div style={{ fontWeight: '600' }}>Acoustic Journey</div>
+              <div style={{ fontWeight: 'bold' }}>Kalkulator Pendakian</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Estimasi waktu & kalori</div>
             </div>
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
-              {!isCached && (
-                <button onClick={handleCache} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>
-                  <Download size={22} />
-                </button>
-              )}
-              <button onClick={togglePlay} style={{ background: 'var(--primary-color)', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', cursor: 'pointer', boxShadow: '0 2px 8px rgba(252, 76, 2, 0.4)' }}>
-                {isPlaying ? <span style={{ fontWeight: 'bold', fontSize: '14px' }}>||</span> : <span style={{ marginLeft: '2px', fontSize: '14px' }}>▶</span>}
-              </button>
+          </Link>
+          <Link to="/timer" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1rem', background: 'rgba(139,92,246,0.1)', borderRadius: '12px', textDecoration: 'none', color: 'var(--text-primary)', border: '1px solid rgba(139,92,246,0.2)' }}>
+            <div style={{ background: '#8b5cf6', color: 'white', padding: '0.5rem', borderRadius: '8px' }}>
+              <Timer size={24} />
             </div>
-          </div>
+            <div>
+              <div style={{ fontWeight: 'bold' }}>Timer & Stopwatch</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Untuk interval training</div>
+            </div>
+          </Link>
         </div>
       </div>
 

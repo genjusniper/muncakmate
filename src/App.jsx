@@ -11,6 +11,8 @@ import FeedPage from './pages/FeedPage';
 import LoginPage from './pages/LoginPage';
 import LeaderboardPage from './pages/LeaderboardPage';
 import MusicPage from './pages/MusicPage';
+import CalcPage from './pages/CalcPage';
+import TimerPage from './pages/TimerPage';
 
 function App() {
   const [isLightMode, setIsLightMode] = useState(false);
@@ -73,6 +75,8 @@ function App() {
             <Route path="/safety" element={<SafetyPage />} />
             <Route path="/music" element={<MusicPage />} />
             <Route path="/strava" element={<StravaPage />} />
+            <Route path="/calc" element={<CalcPage />} />
+            <Route path="/timer" element={<TimerPage />} />
           </Routes>
         </main>
 
