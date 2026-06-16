@@ -41,7 +41,7 @@ const StravaPage = () => {
           vehicle: act.vehicle || ''
         };
         
-        const res = await fetch('http://localhost:3000/api/activities', {
+        const res = await fetch('/api/activities', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)

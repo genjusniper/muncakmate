@@ -3,7 +3,7 @@ import { Users, Map, Car, Bike, Footprints, Heart, MessageCircle, Send, X } from
 import localforage from 'localforage';
 import { MapContainer, TileLayer, Polyline } from 'react-leaflet';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 const FeedPage = () => {
   const [feed, setFeed] = useState([]);

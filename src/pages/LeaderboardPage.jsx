@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Trophy, Medal, Star, Zap, Map, Car, Bike, Footprints, Clock } from 'lucide-react';
 import localforage from 'localforage';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 const LeaderboardPage = () => {
   const [leaderboard, setLeaderboard] = useState([]);
