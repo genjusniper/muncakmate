@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: muncakmate-server
+    runtime: node
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node index.js
+    envVars:
+      - key: DATABASE_URL
+        value: postgresql://neondb_owner:npg_pOz5iFTu0LIj@ep-sparkling-wave-a6es3lmn.us-west-2.aws.neon.tech/neondb?sslmode=require

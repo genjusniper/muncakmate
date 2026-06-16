@@ -1,64 +1,60 @@
-import sqlite3 from 'sqlite3';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import pkg from 'pg';
+const { Pool } = pkg;
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
 
-const dbPath = path.resolve(__dirname, 'muncakmate.db');
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error('Error opening database', err.message);
-  } else {
-    console.log('Connected to the SQLite database.');
-    db.run(`
+// Initialize tables
+const initDb = async () => {
+  const client = await pool.connect();
+  try {
+    await client.query(`
       CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE,
-        password TEXT,
+        id SERIAL PRIMARY KEY,
+        username TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
         avatar TEXT
       )
     `);
-
-    db.run(`
+    await client.query(`
       CREATE TABLE IF NOT EXISTS activities (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id),
         type TEXT,
         duration INTEGER,
         distance REAL,
-        topSpeed REAL,
+        "topSpeed" REAL,
         path TEXT,
         date TEXT,
         driver TEXT,
-        vehicle TEXT,
-        FOREIGN KEY(user_id) REFERENCES users(id)
+        vehicle TEXT
       )
     `);
-
-    db.run(`
+    await client.query(`
       CREATE TABLE IF NOT EXISTS kudos (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        activity_id INTEGER,
-        user_id INTEGER,
-        FOREIGN KEY(activity_id) REFERENCES activities(id),
-        FOREIGN KEY(user_id) REFERENCES users(id),
+        id SERIAL PRIMARY KEY,
+        activity_id INTEGER REFERENCES activities(id),
+        user_id INTEGER REFERENCES users(id),
         UNIQUE(activity_id, user_id)
       )
     `);
-
-    db.run(`
+    await client.query(`
       CREATE TABLE IF NOT EXISTS comments (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        activity_id INTEGER,
-        user_id INTEGER,
+        id SERIAL PRIMARY KEY,
+        activity_id INTEGER REFERENCES activities(id),
+        user_id INTEGER REFERENCES users(id),
         text TEXT,
-        date TEXT,
-        FOREIGN KEY(activity_id) REFERENCES activities(id),
-        FOREIGN KEY(user_id) REFERENCES users(id)
+        date TEXT
       )
     `);
+    console.log('Database tables initialized.');
+  } finally {
+    client.release();
   }
-});
+};
 
-export default db;
+initDb().catch(console.error);
+
+export default pool;
